@@ -1,0 +1,6 @@
+# Artefactos de build
+build/
+*.nds
+*.elf
+*.arm9
+*.map
