@@ -15,6 +15,7 @@
 - [x] Bloque 0.3: `source/main.c` imprime en ambas pantallas; `make` produce `habit-dating-sim-ds.nds` (173 KB) sin errores.
 - [x] Bloque 0.4a: verificado en melonDS. Pantalla superior: "Habit Dating Sim / Nintendo DS". Inferior: "Fase 0 OK / La cadena de build vive." Corre a 60 fps.
 - [ ] Bloque 0.4b (GATE DE CIERRE): Hector carga el `.nds` en su consola y confirma que enciende. Copia del archivo en el Desktop: `habit-dating-sim-ds.nds`.
+  - Primer intento (2026-07-03): 3DS + forwarder → nds-bootstrap dio error. El archivo se verificó sano en PC (ndstool: header/logo/banner/secure area CRC OK, hashes idénticos entre repo y Desktop, corre en melonDS). Diagnóstico apunta al lado consola/forwarder. Siguiente prueba: lanzar desde TWiLight Menu++ directo, sin forwarder.
 
 ### Cómo compilar en esta máquina
 ```
