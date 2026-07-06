@@ -4,3 +4,7 @@ build/
 *.elf
 *.arm9
 *.map
+
+# Artefactos del harness de PC
+host_test.exe
+_hds/

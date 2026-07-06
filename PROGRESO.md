@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-07-06] Fase 1 — Cimientos de riesgo: CONSTRUIDA y verificada en emulador
+
+**Estado:** las 3 piezas de riesgo funcionan en melonDS. Falta el gate de Hector en consola real (sin pila hoy), que valida Fase 0 y Fase 1 juntas con esta misma ROM.
+
+### Hecho hoy
+- [x] **Fuente en español:** hallazgo clave: la fuente default de libnds ya es CP437 y trae á é í ó ú ñ Ñ ü ¿ ¡ É dibujados. No hizo falta fuente custom, solo `source/es.c`: conversor UTF-8 → CP437 (`es_convert` + `es_printf`). Á Í Ó Ú Ü no existen en CP437 y caen a A I O U U (ponytail comment en el código; si un copy las necesita, se parchan 5 glifos en RAM).
+- [x] **RTC:** `time(NULL)` + `localtime()` funcionan; fecha mostrada en español ("lunes 6 de julio de 2026") con reloj vivo por segundo.
+- [x] **Save en microSD:** `source/save.c` con libfat. Archivo `/_hds/fase1.sav` (24 bytes): magic HDS1 + versión + CRC32 + escritura atómica (tmp → rename). Verificado en melonDS con SD virtual (DLDI folder-sync): bootCount y testCounter sobrevivieron 2 reinicios, CRC validado, y el hex del archivo se inspeccionó byte por byte.
+- [x] **Harness de PC:** `test/host_test.c` compila `es.c` y `save.c` con gcc nativo. Cubre mapeo de acentos, fallbacks, truncado seguro, roundtrip del save y detección de corrupción (byte volteado → CRC inválido → carga rechazada). `HOST TESTS OK`.
+- [x] Demo interactiva: botón A suma "corazones de prueba" y guarda al instante.
+- [ ] **GATE (Fase 0 + Fase 1):** Hector prende su consola (hoy sin pila) y verifica: texto en español con acentos, fecha real correcta, y que "Encendidos" y "Corazones" recuerdan entre apagones. ROM ya copiada a su SD (`D:\Juegos_NDS\habit-dating-sim-ds.nds`, hash verificado) y al Desktop.
+
+### Cómo correr los tests de PC
+```
+C:\msys64\usr\bin\bash.exe -lc "cd /c/Users/Dirhector/Desktop/habit-dating-sim-ds && gcc -Wall -Wextra -o host_test.exe test/host_test.c source/es.c source/save.c && ./host_test.exe"
+```
+
+### Notas técnicas
+- melonDS quedó configurado con SD virtual (DLDI folder-sync) y la tecla A del teclado mapeada al botón A (keycode Qt 65), en `%LOCALAPPDATA%\Programs\melonDS\melonDS.toml`. Sin DLDI, la demo muestra "microSD: NO disponible" y sigue corriendo (no crashea).
+- Evidencia visual en el vault: `projects/habit-dating-sim/logs/fase1-boot{1,2-corazones,3-persistencia}-2026-07-06.png`.
+
+### Próxima fase
+Fase 2 (port del motor a C): structs `Character`/`Mission`/`GameState`, mecánica completa (corazones 5/10/18, umbrales 20/60/140, P4 réplica, abandono 21 días, ranking semanal) + los 42 tests como harness de PC (el harness de hoy es la semilla).
+
+---
+
 ## [2026-07-03] Fase 0 — Setup: build funcionando, falta el gate de consola
 
 **Estado:** toolchain instalado, repo creado, hello world compilado y verificado en melonDS. Solo falta que Hector cargue el `.nds` en su consola real para cerrar la fase.
