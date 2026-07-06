@@ -5,6 +5,41 @@
 
 ---
 
+## [2026-07-06] (3) Fase 2 — Motor portado a C: GATE CUMPLIDO ✅ (211 checks en verde)
+
+**Estado:** la lógica completa del juego vive en `source/engine.{h,c}` (pura: sin libnds, sin RTC, sin save; la fecha entra como `GameDate` = días enteros desde epoch). La spec ejecutable es `test/engine_test.c`: **211 checks en verde a la primera**, cubriendo los 42 TC de qa-report, las suites P4/P5 del motor web, hearts/consultas/startup, y tests nuevos del ranking semanal P12. La ROM sigue compilando con el motor incluido (falta cablearlo a UI y save: eso es Fase 3).
+
+### Proceso
+Workflow de 4 lectores paralelos destiló las fuentes de verdad (mecanicas-detalle + DECISIONS, qa-report, motor web vivo función por función, y 02-port-logica). El motor web vivo (`habit-dating-sim-app/src/game/`) fue la referencia de comportamiento; DECISIONS mandó en conflictos (P4 sobre D3, M-2026-06-11-A/B).
+
+### Modelo portado (resumen)
+- Structs planos sin malloc: `Character[8]` (3 activos + históricos), `Mission[16]` (9 pendientes máx + historial reciente con reciclaje del cerrado más viejo), `HappyEnding[16]`. IDs `uint16` autoincrementales, 0 = vacío/null.
+- Mecánica: corazones 5/10/18, umbrales 20/60/140 (nivel sube de a 1 por misión, TC-012), penalizaciones 3/5/8 con clamp a 0, nivel nunca baja por penalización, abandono acumulable con ancla `inactivitySince` que nunca para (21 días por nivel; en 0 se va y libera slot), P4 réplica con multiplicadores 100/75/50/25 (ceil entero sin floats, piso 25% sin ventana), P5 deadline hoy válido, boda al cruzar 140 (cancela pendientes sin penalización, registra HappyEnding).
+- P12: `weeklyHearts` (netos, puede ser negativo), `weeksWon`, `weekAnchor` (lunes), cierre on-load con desempate determinista (más recientemente activo → creado antes → slot menor), #1 solo con neto > 0. +4 campos uint8 de apariencia (cosméticos).
+- `buildStartup(today)`: cierre de semana → checkAbandonment → cola de escenas (nuevas + re-hidratadas, flag huérfano se limpia).
+
+### Supuestos anotados para Hector (no bloquean, los tests los fijan; se cambian con una constante)
+1. **Semana arranca lunes** (supuesto del spec de rankings; ¿lunes o domingo?).
+2. **Netos semanales = deltas nominales**: la penalización resta completa al ranking aunque `heartsTotal` clampee en 0 (G6 del spec).
+3. **Cierre de semana ANTES del check de abandono** al abrir (el podio se congela con los estados de la última sesión).
+4. **GAP heredado del motor web**: al bajar de nivel por abandono, `heartsTotal` no se recorta; la siguiente misión completada puede restaurar el nivel de inmediato. Portado literal (así se comporta la web hoy).
+
+### Cómo correr los tests del motor
+```
+C:\msys64\usr\bin\bash.exe -lc "cd /c/Users/Dirhector/Desktop/habit-dating-sim-ds && gcc -Wall -Wextra -o engine_test.exe test/engine_test.c source/engine.c && ./engine_test.exe"
+```
+
+### Próxima fase
+Fase 3 (pantallas y UI): layout dual-screen, input táctil, creador de personaje (los 4 ejes ya existen en el struct), pantalla de ranking, y cablear motor + save de Fase 1 (serializar `GameState` con el patrón magic/versión/CRC ya probado).
+
+---
+
+## [2026-07-06] (2) GATE DE CONSOLA SUPERADO — Fases 0 y 1 CERRADAS ✅
+
+Hector probó la ROM en su consola real (3DS + TWiLight Menu++): acentos correctos, fecha real correcta, y los contadores ("Encendidos" y "Corazones") recuerdan entre apagones. Con eso quedan validados en hardware: cadena de build, RTC, save en microSD vía nds-bootstrap y fuente en español. Arranca Fase 2 (port del motor a C).
+
+---
+
 ## [2026-07-06] Fase 1 — Cimientos de riesgo: CONSTRUIDA y verificada en emulador
 
 **Estado:** las 3 piezas de riesgo funcionan en melonDS. Falta el gate de Hector en consola real (sin pila hoy), que valida Fase 0 y Fase 1 juntas con esta misma ROM.

@@ -6,5 +6,5 @@ build/
 *.map
 
 # Artefactos del harness de PC
-host_test.exe
+*.exe
 _hds/
