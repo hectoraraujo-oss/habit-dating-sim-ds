@@ -15,7 +15,9 @@
 - [x] Bloque 0.3: `source/main.c` imprime en ambas pantallas; `make` produce `habit-dating-sim-ds.nds` (173 KB) sin errores.
 - [x] Bloque 0.4a: verificado en melonDS. Pantalla superior: "Habit Dating Sim / Nintendo DS". Inferior: "Fase 0 OK / La cadena de build vive." Corre a 60 fps.
 - [ ] Bloque 0.4b (GATE DE CIERRE): Hector carga el `.nds` en su consola y confirma que enciende. Copia del archivo en el Desktop: `habit-dating-sim-ds.nds`.
-  - Primer intento (2026-07-03): 3DS + forwarder → nds-bootstrap dio error. El archivo se verificó sano en PC (ndstool: header/logo/banner/secure area CRC OK, hashes idénticos entre repo y Desktop, corre en melonDS). Diagnóstico apunta al lado consola/forwarder. Siguiente prueba: lanzar desde TWiLight Menu++ directo, sin forwarder.
+  - Primer intento (2026-07-03): 3DS + forwarder → nds-bootstrap dio error. El archivo se verificó sano en PC (ndstool: header/logo/banner/secure area CRC OK, hashes idénticos entre repo y Desktop, corre en melonDS). Diagnóstico apunta al lado consola/forwarder.
+  - Diagnóstico con la SD en la PC (2026-07-03): copia en SD byte-idéntica al original (SHA256). Causa raíz probable: el forwarder NTR lanza la ROM con `nds-bootstrap-release` (bootstrap de juegos comerciales, que la trata como cartucho y la parchea) en vez de `nds-bootstrap-hb-release` (homebrew). Evidencia: el `.sav` sí se creó (el bootstrap corrió y murió después), los juegos comerciales del mismo setup funcionan, y no había TWiLight Menu++ en la SD. El bootstrap además estaba viejo (v0.60.0).
+  - Fix aplicado en la SD desde la PC: nds-bootstrap actualizado a v2.16.0 + TWiLight Menu++ v27.24.1 copiado (`_nds/TWiLightMenu`, `roms/`, CIA en `sd:/cias/`). Backup de los bootstraps previos en `sd:/_nds-backup-20260703/`. Falta que Hector instale la CIA con FBI y lance el juego desde TWiLight Menu++ (detecta homebrew y usa el bootstrap hb automáticamente).
 
 ### Cómo compilar en esta máquina
 ```
