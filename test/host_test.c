@@ -29,8 +29,16 @@ static void test_es(void) {
 	es_convert("ÁÍÓÚÜ", out, sizeof(out));
 	assert(strcmp(out, "AIOUU") == 0);            // fallback sin acento
 
-	es_convert("\xE4\xB8\xAD", out, sizeof(out)); // CJK de 3 bytes
+	es_convert("\xE4\xB8\xAD", out, sizeof(out)); // CJK de 3 bytes: sin glifo
 	assert(strcmp(out, "?") == 0);
+
+	// Glifos de UI de Fase 3 (secuencias UTF-8 de 3 bytes con mapeo CP437).
+	es_convert("♥░√·", out, sizeof(out));
+	assert((unsigned char)out[0] == 0x03);        // ♥
+	assert((unsigned char)out[1] == 0xB0);        // ░
+	assert((unsigned char)out[2] == 0xFB);        // √
+	assert((unsigned char)out[3] == 0xFA);        // ·
+	assert(out[4] == '\0');
 
 	// Truncado seguro: no desborda y termina en NUL.
 	char tiny[4];

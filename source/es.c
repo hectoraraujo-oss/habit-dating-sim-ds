@@ -17,6 +17,10 @@ static char cp437_for(unsigned int cp) {
 	case 0x00C9: return (char)0x90; // É
 	case 0x00BF: return (char)0xA8; // ¿
 	case 0x00A1: return (char)0xAD; // ¡
+	case 0x00B7: return (char)0xFA; // · (viñeta de misión pendiente)
+	case 0x2665: return (char)0x03; // ♥ (corazón de la fuente CP437)
+	case 0x2591: return (char)0xB0; // ░ (tramo vacío de barras)
+	case 0x221A: return (char)0xFB; // √ (misión completada)
 	// ponytail: CP437 no tiene Á Í Ó Ú Ü; caen a la vocal sin acento.
 	// Si algún copy las necesita de verdad, se parchan 5 glifos en RAM.
 	case 0x00C1: return 'A';
@@ -29,6 +33,7 @@ static char cp437_for(unsigned int cp) {
 }
 
 size_t es_convert(const char *utf8, char *out, size_t n) {
+	if (n == 0) return 0;
 	size_t o = 0;
 	const unsigned char *s = (const unsigned char *)utf8;
 	while (*s && o + 1 < n) {
@@ -38,8 +43,16 @@ size_t es_convert(const char *utf8, char *out, size_t n) {
 		} else if ((b & 0xE0) == 0xC0 && (*s & 0xC0) == 0x80) {
 			unsigned int cp = ((b & 0x1Fu) << 6) | (*s++ & 0x3Fu);
 			out[o++] = cp437_for(cp);
+		} else if ((b & 0xF0) == 0xE0 && (s[0] & 0xC0) == 0x80 &&
+		           (s[1] & 0xC0) == 0x80) {
+			// 3 bytes: aquí viven ♥ ░ √ y demás glifos de UI.
+			unsigned int cp = ((b & 0x0Fu) << 12) |
+			                  ((unsigned int)(s[0] & 0x3Fu) << 6) |
+			                  (unsigned int)(s[1] & 0x3Fu);
+			s += 2;
+			out[o++] = cp437_for(cp);
 		} else {
-			// Secuencias de 3-4 bytes: fuera del repertorio del juego.
+			// Secuencias de 4 bytes o malformadas: fuera del repertorio.
 			while ((*s & 0xC0) == 0x80) s++;
 			out[o++] = '?';
 		}

@@ -64,10 +64,10 @@ Las órdenes de construcción por fase viven en `projects/habit-dating-sim/equip
 
 | Fase | Nombre | Estado |
 |---|---|---|
-| 0 | Setup (toolchain + repo + hello world .nds) | ⏳ En curso |
-| 1 | Cimientos de riesgo (RTC + save libfat + fuente en español) | Pendiente |
-| 2 | Port del motor a C (+ tests, P4, +4 campos de apariencia, ranking) | Pendiente |
-| 3 | Pantallas, input táctil, creador de personaje, pantalla de ranking | Pendiente |
+| 0 | Setup (toolchain + repo + hello world .nds) | ✅ Cerrada (2026-07-06, consola real) |
+| 1 | Cimientos de riesgo (RTC + save libfat + fuente en español) | ✅ Cerrada (2026-07-06, consola real) |
+| 2 | Port del motor a C (+ tests, P4, +4 campos de apariencia, ranking) | ✅ Cerrada (2026-07-06, 211 checks) |
+| 3 | Pantallas, input táctil, creador de personaje, pantalla de ranking | ⏳ Construida; gate de Hector pendiente |
 | 4 | Assets y motor de escenas compuestas en runtime | Pendiente |
 | 5 | Pulido y release del .nds final | Pendiente |
 
@@ -108,4 +108,15 @@ make            # compila a .nds
 make clean      # limpia artefactos de build
 ```
 
-(Los comandos de test del harness de C se definen al llegar a la Fase 2.)
+Harnesses de PC (gcc de MSYS2, correr con `C:\msys64\usr\bin\bash.exe -lc "cd /c/Users/Dirhector/Desktop/habit-dating-sim-ds && <comando>"`):
+
+```bash
+# Motor (211 checks, la spec ejecutable)
+gcc -Wall -Wextra -o engine_test.exe test/engine_test.c source/engine.c && ./engine_test.exe
+# Save v2 (roundtrip, corrupción, cuarentena, versiones)
+gcc -Wall -Wextra -o save2_test.exe test/save2_test.c source/save2.c source/engine.c source/save.c && ./save2_test.exe
+# Fechas (civil <-> GameDate, roundtrip 2010-2040)
+gcc -Wall -Wextra -o fecha_test.exe test/fecha_test.c source/fecha.c && ./fecha_test.exe
+# Fase 1 (es.c + save.c)
+gcc -Wall -Wextra -o host_test.exe test/host_test.c source/es.c source/save.c && ./host_test.exe
+```

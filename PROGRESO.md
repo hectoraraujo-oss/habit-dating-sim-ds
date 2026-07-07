@@ -5,6 +5,57 @@
 
 ---
 
+## [2026-07-06] (5) Fase 3 — Pantallas y UI: CONSTRUIDA, QA pasada, falta el gate de consola
+
+**Estado:** el loop completo es jugable con stylus. La ROM (312 KB) compila sin warnings, arranca en melonDS a 60 fps y las 4 suites de PC están en verde (motor 211 checks, save2, fecha, host). Falta el gate de Hector en su consola.
+
+### Qué se construyó
+- **`source/save2.{h,c}` — save v2:** la partida completa (`GameState`, 2092 bytes) con magic HDS2, versión, `stateSize` como guard de layout (+ `_Static_assert`s), CRC32, escritura atómica, `lastSeenDay` (guardia anti reloj-hacia-atrás) y cuarentena de saves corruptos en `game.bad` (nunca se pisa un save que no se entiende; si la cuarentena falla, la sesión no escribe). Archivo: `/_hds/game.sav`.
+- **`source/fecha.{h,c}`:** civil <-> GameDate (algoritmo de Hinnant, entero puro), weekday, formatos en español. El RTC se lee vía `localtime` y se convierte con esto; prohibido `time()/86400`.
+- **`source/ui.{h,c}` (~950 líneas) — las 10 pantallas de FASE3-PANTALLAS.md:** V0 inicio, V1 Home (3 slots + lista de pendientes paginada + destacado arriba), V2 Perfil (historial paginado, banner de riesgo), V3 Crear misión (dificultad con copy literal, deadline hoy..hoy+14, P5), V4 Completar con variante vencida P4 (dos botones, preview con `calcHeartsEarned`), V5 Nivel + variante Boda (D2), V6 Abandono (salida definitiva o solo bajada de nivel; copy alterno si nunca completó nada), V7 Cancelación/pérdida (con aviso extra en 0 ♥), V8 Creador de 4 ejes (base/color/accesorio/expresión, accesorio 0 = ninguno), V9 Ranking semanal (podio solo con líder real, tabla con netos, desempate espejo del motor). Teclado táctil propio (A-Z + Ñ + espacio, borrado UTF-8-consciente). Cola de startup: escenas de nivel/boda re-hidratadas vía `milestonesShown` → resultado de semana → abandonos/cancelaciones del motor, con acknowledge + save por escena.
+- **Política de guardado:** una escritura tras cada mutación `ENGINE_OK` (y tras cada acknowledge de escena). `today()` se re-muestrea en cada acción, clampeado a `lastSeenDay`.
+
+### QA adversarial (FASE3-QA-AUDIT.md en el vault): APTO CON FIXES → fixes aplicados
+- **A1 (fix aplicado):** `es_convert` no decodificaba UTF-8 de 3 bytes; ♥ ░ √ · salían como `?` en toda la UI. Ahora hay rama de 3 bytes + asserts en host_test.
+- **A2 (fix aplicado):** V3/V4 usaban la fecha de entrada a la pantalla; ahora cada mutación re-muestrea `today()` (consola dormida días ya no rompe P4 ni el ancla de inactividad).
+- **M1 (fix aplicado):** apagón entre el save y el CONTINUAR de una escena de nivel/boda ya no se la traga: se re-hidrata al arrancar con bits en `milestonesShown` (bits 1-2 nivel, 3 boda; al bajar de nivel se limpian los bits superiores para que re-alcanzar dé escena).
+- **B1, podio, copy de abandono, desborde de fila en Home, bound de ranking_orden, es_convert(n=0) (fixes aplicados).**
+
+### Decisiones de constructor tomadas en esta fase (Hector: bendecir o vetar en el gate)
+1. **Input solo stylus + B (atrás) + X (ranking desde Home).** El espejo D-pad/A/L/R de la spec quedó fuera (M2 de la QA). En consola el stylus siempre está; si en el gate se siente incómodo, se agrega.
+2. **Copy de boda propuesto** ("Lo logramos. Esto ya no es una promesa: es parte de quién eres. Sí, acepto.") — no había copy en el vault (A1 de FASE3-PANTALLAS).
+3. **Teclado sin acentos/minúsculas** y nombres a máx 20 celdas visibles.
+4. **Reagendar misión sin UI** (el motor lo soporta; la advertencia de V3 queda como aviso general). Si se quiere, es una pantalla más.
+5. **Semana cerrada sin ganador no genera pantalla** al arrancar (solo se ve en V9).
+6. **Accesorio índice 0 = ninguno** (cerrado en FASE3-INTEGRACION §4; Fase 4 indexa assets 1..4).
+
+### Deuda anotada (no bloquea el gate)
+- Contador de canceladas en Perfil cuenta solo lo vivo en `Mission[16]` (se deflacta con el reciclaje); arreglarlo pide un contador persistente → lote con el próximo `SAVE2_VERSION`+1.
+- Menciones narrativas de eliminado/graduado en el ranking (V9) no construidas.
+- Toast puede aparecer tarde si se crea misión desde Perfil y se vuelve a Home mucho después.
+- Registro de boda esperando escena podría reciclarse si los 8 records se llenan (ventana mínima).
+
+### Cómo correr todo
+```
+# ROM
+C:\msys64\usr\bin\bash.exe -lc "cd /c/Users/Dirhector/Desktop/habit-dating-sim-ds && make"
+# Suites de PC (ver CLAUDE.md del repo para los 4 comandos)
+```
+
+### GATE DE HECTOR (cierra la fase)
+Con la ROM nueva en la SD (reemplazar la vieja): 1) primer arranque → pantalla de inicio → crear tu primer habiter (4 ejes + nombre con el teclado táctil); 2) crearle una misión y completarla (deben subir corazones y guardarse); 3) apagar y prender → debe recordar todo; 4) probar el ranking (botón X), cancelar una misión (escena de decepción) y navegar con B. Si algo se siente raro con el stylus, es feedback directo para las decisiones 1-5 de arriba.
+
+### Próxima fase
+Fase 4 (assets y motor de escenas compuestas): los 4 ejes del creador ya persisten en el save; el descriptor está cerrado (base 0-3, paleta 0-3, accesorio 0=ninguno/1-4, expresión 0-2, default {0,0,0,0} con arte garantizado).
+
+---
+
+## [2026-07-06] (4) Supuestos de Fase 2 CONFIRMADOS por Hector ✅ — arranca Fase 3
+
+Hector confirmó los 4 supuestos anotados abajo (semana lunes, netos nominales, cierre de semana antes de abandono, GAP nivel/corazones heredado de la web). Quedan fijados como comportamiento oficial; los tests que los cubren son ahora spec, no supuesto. Arranca Fase 3 (pantallas y UI).
+
+---
+
 ## [2026-07-06] (3) Fase 2 — Motor portado a C: GATE CUMPLIDO ✅ (211 checks en verde)
 
 **Estado:** la lógica completa del juego vive en `source/engine.{h,c}` (pura: sin libnds, sin RTC, sin save; la fecha entra como `GameDate` = días enteros desde epoch). La spec ejecutable es `test/engine_test.c`: **211 checks en verde a la primera**, cubriendo los 42 TC de qa-report, las suites P4/P5 del motor web, hearts/consultas/startup, y tests nuevos del ranking semanal P12. La ROM sigue compilando con el motor incluido (falta cablearlo a UI y save: eso es Fase 3).
